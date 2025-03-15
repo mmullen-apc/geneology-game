@@ -142,7 +142,8 @@
             document.getElementById('game').style.display = 'block';
             document.getElementById('hintButton').style.display = withHints ? 'inline' : 'none';
             currentName = 'Jesus';
-            sequence = ['Jesus'];
+            sequence = [];  // Start with empty sequence
+            sequence.push(currentName);  // Add first name
             revealedCount = 0;
             updateDisplay();
             if (withHints) requestHint();
@@ -216,7 +217,12 @@
                 }
                 console.log(`Moving from ${currentName} to ${data.next_name}`);  // Debug log
                 currentName = data.next_name;
-                sequence.push(currentName);
+                // Only add to sequence if it's actually a new name (ignoring numbers)
+                const cleanNewName = data.next_name.replace(/\d+$/, '');
+                const lastNameInSequence = sequence[sequence.length - 1].replace(/\d+$/, '');
+                if (cleanNewName !== lastNameInSequence) {
+                    sequence.push(currentName);
+                }
                 revealedCount = 0;
                 document.getElementById('hintButton').disabled = false;
                 updateDisplay();
