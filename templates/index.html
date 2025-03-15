@@ -352,18 +352,21 @@
                     return;
                 }
                 
-                currentName = data.next_name;
-                
-                // Only add to sequence if it's actually a new name (ignoring numbers)
+                // Update current name and add to sequence
                 const cleanNewName = data.next_name.replace(/\d+$/, '');
                 const lastNameInSequence = sequence.length > 0 ? 
                     sequence[sequence.length - 1].replace(/\d+$/, '') : '';
                 
+                // Always update current name
+                currentName = data.next_name;
+                
+                // Add to sequence if it's a new name
                 if (cleanNewName !== lastNameInSequence) {
                     sequence.push(currentName);
                     updateProgressCounter();
                 }
 
+                // Handle completion
                 if (data.complete) {
                     document.getElementById('nextButton').disabled = true;
                     document.getElementById('hintButton').disabled = true;
@@ -373,11 +376,13 @@
                     return;
                 }
 
+                // Reset hint counter and enable hint button
                 revealedCount = 0;
                 document.getElementById('hintButton').disabled = false;
                 
+                // Update display based on mode
                 if (isPIMode) {
-                    updateDisplay();
+                    updateDisplay();  // Update sequence first
                     flashNextName(cleanNewName);
                 } else {
                     updateDisplay();
@@ -395,7 +400,9 @@
             document.getElementById('game').style.display = 'none';
             document.getElementById('nextButton').disabled = false;
             document.getElementById('hintButton').disabled = false;
+            document.getElementById('showListButton').disabled = false;
             document.getElementById('hint').textContent = '';
+            document.getElementById('sequence').classList.remove('hidden');
             speak("Welcome back to the Genealogy Game. Please select a mode.");
         }
     </script>

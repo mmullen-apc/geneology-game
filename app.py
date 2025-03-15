@@ -188,24 +188,21 @@ def next_name():
     current_name = data.get('current_name', 'Jesus')
     revealed_count = int(data.get('revealed_count', 0))
     
-    if current_name == "God":
-        return jsonify({
-            "complete": True,
-            "next_name": "God",
-            "hint": "You've completed the sequence!",
-            "revealed_count": 0
-        })
-    
     next_name = genealogy.get(current_name)
     if not next_name:
         return jsonify({"error": "Invalid name"})
     
+    # Get hint for the next name
     hint_data = get_progressive_hint(next_name, revealed_count)
+    
+    # Check if we're at the end (next name is God)
+    is_complete = next_name == "God"
+    
     return jsonify({
         "next_name": next_name,
         "hint": hint_data["hint"],
         "revealed_count": hint_data["count"],
-        "complete": next_name == "God"  # Set complete flag when reaching God
+        "complete": is_complete
     })
 
 @app.route('/api/total-names')
