@@ -179,8 +179,10 @@
                     console.error(data.error);
                     return;
                 }
-                // Remove any numbers from the hint display
-                const displayHint = data.hint.replace(/\d+/g, '');
+                // Only remove numbers from the hint if it's not a letter count hint
+                const displayHint = data.hint.includes("has") ? 
+                    data.hint : 
+                    data.hint.replace(/\d+/g, '');
                 document.getElementById('hint').textContent = displayHint;
                 speak(displayHint);
                 revealedCount = data.revealed_count;
