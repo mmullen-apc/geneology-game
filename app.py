@@ -93,6 +93,24 @@ genealogy_list = [
 # Create dictionary from the list
 genealogy = {genealogy_list[i]: genealogy_list[i + 1] for i in range(len(genealogy_list) - 1)}
 
+# Debug print to verify sequence
+print("\nVerifying sequence:")
+current = "Jesus"
+seen = set()
+while current != "God":
+    if current in seen:
+        print(f"ERROR: Found duplicate in sequence: {current}")
+        break
+    seen.add(current)
+    next_name = genealogy[current]
+    print(f"{current} -> {next_name}")
+    current = next_name
+
+# Verify specific section
+print("\nVerifying Neri section:")
+print(f"Neri -> {genealogy['Neri']}")
+print(f"Melki2 -> {genealogy['Melki2']}")
+
 def strip_parentheses(text):
     """Remove parenthetical information from text."""
     return re.sub(r'\s*\([^)]*\)', '', text)

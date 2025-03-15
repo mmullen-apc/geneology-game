@@ -128,6 +128,10 @@
             } else if (event.key.toLowerCase() === 'r') {
                 restartGame();
             } else if (event.key.toLowerCase() === 'c') {
+                if (speaking) {
+                    speechSynthesis.cancel();
+                    speaking = false;
+                }
                 nextName();
             }
         });
@@ -145,7 +149,7 @@
         }
 
         function updateDisplay() {
-            // Keep indexed names internal but display clean names
+            // Remove all numbers from display and speech
             const displaySequence = sequence.map(name => name.replace(/\d+$/, ''));
             document.getElementById('sequence').textContent = displaySequence.join(' → ');
             speak(displaySequence.join(' '));
@@ -170,8 +174,8 @@
                     console.error(data.error);
                     return;
                 }
-                // Remove index from hint display
-                const displayHint = data.hint.replace(/\s*\(\d+\)$/, '');
+                // Remove any numbers from the hint display
+                const displayHint = data.hint.replace(/\d+/g, '');
                 document.getElementById('hint').textContent = displayHint;
                 speak(displayHint);
                 revealedCount = data.revealed_count;
@@ -182,7 +186,11 @@
         }
 
         function nextName() {
-            if (speaking) return;  // Don't proceed while speaking
+            // Cancel any ongoing speech before proceeding
+            if (speaking) {
+                speechSynthesis.cancel();
+                speaking = false;
+            }
             
             fetch('/api/next', {
                 method: 'POST',
@@ -206,6 +214,7 @@
                     speak("Congratulations! You've completed the genealogy sequence!");
                     return;
                 }
+                console.log(`Moving from ${currentName} to ${data.next_name}`);  // Debug log
                 currentName = data.next_name;
                 sequence.push(currentName);
                 revealedCount = 0;
