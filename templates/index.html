@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Genealogy Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .sequence {
+            font-size: 1.2em;
+            margin: 20px 0;
+            line-height: 1.5;
+        }
+        .divider {
+            border-top: 1px solid #ccc;
+            margin: 20px 0;
+        }
+        .hint {
+            font-size: 1.1em;
+            margin: 20px 0;
+            color: #666;
+        }
+        .controls {
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            margin-right: 10px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .mode-select {
+            margin-bottom: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>The Genealogy Game</h1>
+        <div class="mode-select">
+            <button onclick="startGame(true)">Play with Hints</button>
+            <button onclick="startGame(false)">Play without Hints</button>
+        </div>
+        <div id="game" style="display: none;">
+            <div class="sequence" id="sequence"></div>
+            <div class="divider"></div>
+            <div class="hint" id="hint"></div>
+            <div class="controls">
+                <button onclick="requestHint()" id="hintButton">Get Hint (H)</button>
+                <button onclick="nextName()" id="nextButton">Continue (C)</button>
+                <button onclick="restartGame()">Restart (R)</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentName = 'Jesus';
+        let sequence = ['Jesus'];
+        let revealedCount = 0;
+        let showHints = false;
+        let speechSynthesis = window.speechSynthesis;
+        let speaking = false;
+
+        function speak(text) {
+            // Cancel any ongoing speech
+            speechSynthesis.cancel();
+
+            // Create a new utterance
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9;  // Slightly slower than default
+            utterance.pitch = 1;
+            
+            // Get available voices and set to a female English voice if available
+            let voices = speechSynthesis.getVoices();
+            let englishVoice = voices.find(voice => 
+                voice.lang.startsWith('en') && voice.name.includes('Female')
+            ) || voices.find(voice => voice.lang.startsWith('en')) || voices[0];
+            
+            if (englishVoice) {
+                utterance.voice = englishVoice;
+            }
+
+            // Speak the text
+            speechSynthesis.speak(utterance);
+            speaking = true;
+
+            // Update speaking state when done
+            utterance.onend = () => {
+                speaking = false;
+            };
+        }
+
+        // Initialize voices
+        speechSynthesis.onvoiceschanged = () => {
+            speak("The Genealogy Game by Dayton Mullen");
+        };
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key.toLowerCase() === 'h' && showHints) {
+                requestHint();
+            } else if (event.key.toLowerCase() === 'r') {
+                restartGame();
+            } else if (event.key.toLowerCase() === 'c') {
+                nextName();
+            }
+        });
+
+        function startGame(withHints) {
+            showHints = withHints;
+            document.querySelector('.mode-select').style.display = 'none';
+            document.getElementById('game').style.display = 'block';
+            document.getElementById('hintButton').style.display = withHints ? 'inline' : 'none';
+            currentName = 'Jesus';
+            sequence = ['Jesus'];
+            revealedCount = 0;
+            updateDisplay();
+            if (withHints) requestHint();
+        }
+
+        function updateDisplay() {
+            // Keep indexed names internal but display clean names
+            const displaySequence = sequence.map(name => name.replace(/\d+$/, ''));
+            document.getElementById('sequence').textContent = displaySequence.join(' → ');
+            speak(displaySequence.join(' '));
+        }
+
+        function requestHint() {
+            if (speaking) return;  // Don't request new hint while speaking
+            
+            fetch('/api/next', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    current_name: currentName,
+                    revealed_count: revealedCount
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error(data.error);
+                    return;
+                }
+                // Remove index from hint display
+                const displayHint = data.hint.replace(/\s*\(\d+\)$/, '');
+                document.getElementById('hint').textContent = displayHint;
+                speak(displayHint);
+                revealedCount = data.revealed_count;
+                if (data.complete) {
+                    document.getElementById('hintButton').disabled = true;
+                }
+            });
+        }
+
+        function nextName() {
+            if (speaking) return;  // Don't proceed while speaking
+            
+            fetch('/api/next', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    current_name: currentName,
+                    revealed_count: 0
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error(data.error);
+                    return;
+                }
+                if (data.complete) {
+                    document.getElementById('nextButton').disabled = true;
+                    document.getElementById('hintButton').disabled = true;
+                    speak("Congratulations! You've completed the genealogy sequence!");
+                    return;
+                }
+                currentName = data.next_name;
+                sequence.push(currentName);
+                revealedCount = 0;
+                document.getElementById('hintButton').disabled = false;
+                updateDisplay();
+                if (showHints) requestHint();
+            });
+        }
+
+        function restartGame() {
+            if (speaking) {
+                speechSynthesis.cancel();
+                speaking = false;
+            }
+            document.querySelector('.mode-select').style.display = 'block';
+            document.getElementById('game').style.display = 'none';
+            document.getElementById('nextButton').disabled = false;
+            document.getElementById('hintButton').disabled = false;
+            document.getElementById('hint').textContent = '';
+            speak("Welcome back to the Genealogy Game. Please select a mode.");
+        }
+    </script>
+</body>
+</html> 
