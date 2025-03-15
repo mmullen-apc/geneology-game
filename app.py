@@ -130,8 +130,9 @@ def get_progressive_hint(name, revealed_count):
         # Second hint shows both first and last letters
         return {"count": 2, "hint": f"Next name starts with: {base_name[0]} and ends with: {base_name[-1]}"}
     elif revealed_count == 2:
-        # Third hint shows length
-        return {"count": 3, "hint": f"Next name has {len(base_name)} letters"}
+        # Third hint shows length of the base name (without numbers)
+        num_letters = len(base_name)
+        return {"count": 3, "hint": f"The name has {num_letters} letter{'s' if num_letters != 1 else ''}"}
     else:
         # After that, progressively reveal more letters
         revealed = ['_'] * len(base_name)

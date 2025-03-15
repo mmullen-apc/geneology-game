@@ -157,7 +157,11 @@
         }
 
         function requestHint() {
-            if (speaking) return;  // Don't request new hint while speaking
+            // Cancel any ongoing speech before requesting new hint
+            if (speaking) {
+                speechSynthesis.cancel();
+                speaking = false;
+            }
             
             fetch('/api/next', {
                 method: 'POST',
