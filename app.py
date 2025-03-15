@@ -157,9 +157,30 @@ def get_progressive_hint(name, revealed_count):
             "complete": revealed_count >= len(base_name)
         }
 
+def get_random_start_name():
+    """Get a random name from the genealogy list, excluding duplicates."""
+    # Create a list of unique base names (without numbers)
+    seen_names = set()
+    unique_names = []
+    for name in genealogy_list:
+        base_name = re.sub(r'\d+$', '', name)
+        if base_name not in seen_names:
+            seen_names.add(base_name)
+            unique_names.append(name)
+    # Don't include 'God' as it's the end of the sequence
+    unique_names.remove('God')
+    return random.choice(unique_names)
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/api/random-start', methods=['GET'])
+def random_start():
+    """Get a random starting name for the challenge mode."""
+    return jsonify({
+        "start_name": get_random_start_name()
+    })
 
 @app.route('/api/next', methods=['POST'])
 def next_name():
@@ -181,6 +202,10 @@ def next_name():
         "revealed_count": hint_data["count"],
         "complete": hint_data.get("complete", False)
     })
+
+@app.route('/api/total-names')
+def get_total_names():
+    return jsonify({'total': len(genealogy_list)})
 
 if __name__ == '__main__':
     app.run(debug=True) 
